@@ -4,7 +4,6 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-26.05";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
-    nixos-hardware.url = "github:NixOS/nixos-hardware";
 	home-manager = {
 		url = "github:nix-community/home-manager/release-26.05";
 		inputs.nixpkgs.follows = "nixpkgs";	
@@ -26,7 +25,7 @@
   };
 
 
-  outputs = { self, nixpkgs, nixos-hardware, home-manager, stylix, home-server, open-lock, fleetman, nixpkgs-unstable, horus-33, ... } @ inputs:
+  outputs = { self, nixpkgs, home-manager, stylix, home-server, open-lock, fleetman, nixpkgs-unstable, horus-33, ... } @ inputs:
   	let 
   	unstable = import nixpkgs-unstable {
   		system = "x86_64-linux";
@@ -45,13 +44,11 @@
 			system = "x86_64-linux";
 			specialArgs = {inherit inputs unstable fleetman; };
 			modules = [
-				./common.nix 
-				nixos-hardware.nixosModules.framework-16-7040-amd
-				./hardware-configuration-framework-16.nix
+				./common.nix
+				./hardware-configuration-desktop.nix
 				./modules/desktop.nix
 				./modules/cb-cli.nix
 				./modules/work.nix
-				./modules/keyd.nix
 				./modules/dir.nix
 				./modules/micro.nix
 				./modules/mqtt-broker.nix

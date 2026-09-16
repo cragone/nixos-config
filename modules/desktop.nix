@@ -1,33 +1,16 @@
 # desktop packages here
 
 { inputs, config, pkgs, lib, open-lock, unstable, ... }:
-let
-	androidComposition = pkgs.androidenv.composeAndroidPackages {
-		platformVersions = [ "36" "35" ];
-		buildToolsVersions = [ "36.0.0" "35.0.0" ];
-		includeEmulator = false;
-		includeSystemImages = false;
-		includeNDK = true;
-		ndkVersions = [ "27.1.12297006" ];
-		cmakeVersions = [ "3.22.1" ];
-	};
-in
 {
 
 	nixpkgs.overlays = [ inputs.claude-code.overlays.default ];
-	nixpkgs.config.android_sdk.accept_license = true;
 
 	environment.variables = {
-		ANDROID_HOME = "${androidComposition.androidsdk}/libexec/android-sdk";
-		ANDROID_SDK_ROOT = "${androidComposition.androidsdk}/libexec/android-sdk";
 		EDITOR = "micro";
 		VISUAL = "micro";
 	};
 
 	environment.systemPackages = with pkgs; [
-		android-tools
-		androidComposition.androidsdk
-		jdk17
 		kitty
 		hyprcursor
 		adwaita-icon-theme
@@ -52,7 +35,6 @@ in
 		azure-cli
 		grimblast
 		bruno
-		kicad
 		glib
 		jira-cli-go
 		claude-code
@@ -195,9 +177,6 @@ in
 	# networking.firewall.allowedTCPPorts = [ ];
 	programs.bash.interactiveShellInit = ''
 	  tput rmam
-	  export ANDROID_HOME="${androidComposition.androidsdk}/libexec/android-sdk"
-	  export ANDROID_SDK_ROOT="${androidComposition.androidsdk}/libexec/android-sdk"
-	  export PATH="$PATH:$ANDROID_HOME/platform-tools"
 	'';
 
 	home-manager.users.nixos = {
