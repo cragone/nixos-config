@@ -4,7 +4,7 @@
 		micro
 	];
 	
-	home-manager.users.nixos = {
+	home-manager.users.charlie = {
 		home.stateVersion = "25.11";	
 		programs.micro = {
 			enable = true;

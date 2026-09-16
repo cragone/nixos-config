@@ -36,9 +36,9 @@
 	};
 
 	# Define a user account. Don't forget to set a password with ‘passwd’.
-	users.users.nixos = {
+	users.users.charlie = {
 		 isNormalUser = true;
-		 description = "nixos";
+		 description = "charlie";
 		 extraGroups = [
 		   "networkmanager"
 		   "wheel"

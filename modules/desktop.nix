@@ -88,9 +88,9 @@
 	# 	          manageBroker = false;
 	# 	        };
 	
-	users.users.nixos.extraGroups = [ "video" "dialout" ];
+	users.users.charlie.extraGroups = [ "video" "dialout" ];
 		
-	home-manager.users.nixos = {
+	home-manager.users.charlie = {
 			systemd.user.tmpfiles.rules = [
 				"d %h/screenshots 0755 - - -"
 			];
@@ -159,7 +159,7 @@
 	  	command = "/run/current-system/sw/bin/brightnessctl";
 	  	options = [ "NOPASSWD" ];
 	  }];
-	  users = [ "nixos" ];
+	  users = [ "charlie" ];
 	}];
 	
 	stylix.enable = true;
@@ -179,7 +179,7 @@
 	  tput rmam
 	'';
 
-	home-manager.users.nixos = {
+	home-manager.users.charlie = {
 		stylix.enableReleaseChecks = false;
 		programs.fuzzel.enable = true;
 		programs.swayimg.enable = true;
@@ -573,7 +573,7 @@
 		enable = true;
 		settings.default_session = {
 			command = "${pkgs.hyprland}/bin/start-hyprland";
-			user = "nixos";
+			user = "charlie";
 		};
 	};
 	environment.sessionVariables.WAYLAND_DISPLAY = "wayland-1";

@@ -5,8 +5,8 @@ let
     LOGFILE="/var/log/clamav/scan.log"
     RESULT=$(${pkgs.clamav}/bin/clamdscan --infected --multiscan --fdpass \
       --exclude-dir='^/nix/store' \
-      --exclude-dir='^/home/nixos/.cache' \
-      /home/nixos 2>&1)
+      --exclude-dir='^/home/charlie/.cache' \
+      /home/charlie 2>&1)
     STATUS=$?
     echo "$RESULT" >> "$LOGFILE"
     if [ $STATUS -ne 0 ]; then
@@ -27,7 +27,7 @@ in
   services.clamav.daemon.settings = {
     ExcludePath = [
       "^/nix/store"
-      "^/home/nixos/.cache"
+      "^/home/charlie/.cache"
       "^/proc"
       "^/sys"
       "^/dev"
@@ -37,7 +37,7 @@ in
   };
 
   systemd.tmpfiles.rules = [
-    "d /var/log/clamav 0755 nixos users -"
+    "d /var/log/clamav 0755 charlie users -"
   ];
 
   systemd.services.clamav-scan = {
@@ -47,7 +47,7 @@ in
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "${scanScript}";
-      User = "nixos";
+      User = "charlie";
     };
   };
 
