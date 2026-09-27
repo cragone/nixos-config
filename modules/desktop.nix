@@ -45,6 +45,10 @@
 		goose
 		ungoogled-chromium
 		unstable.brave-origin
+		nixd
+		lua-language-server
+		gopls
+		zed-editor
 	];
 	# expo stuff
 	programs.nix-ld.enable = true;
@@ -413,6 +417,18 @@
 
 			stylix.targets.vscodium.enable = true;
 			programs.vscodium.enable = true;
+
+			stylix.targets.neovim.enable = true;
+			programs.neovim.enable = true;
+
+			programs.zed-editor = {
+				enable = true;
+				# go, yaml, and jsx/tsx (react) are bundled into Zed's core;
+				# html is the only one of these that's a separate marketplace extension.
+				extensions = [ "html" ];
+				# theme is left to stylix (dark base16 twilight scheme, matches the rest of the desktop)
+			};
+
 			home.packages = [
 				unstable.pi-coding-agent
 				(pkgs.writeShellScriptBin "sentry-exec" ''
@@ -526,7 +542,7 @@
 					"ALT_R, Space, togglefloating,"
 					"ALT_R, Tab, pin,"
 					"ALT_R, Return, fullscreen, 1"
-					"ALT_R SHIFT, E, exec, hyprlock"
+					"ALT_L SHIFT, L, exec, hyprlock"
 					# "ALT_R, O, resizeactive, -50 0"
 					# "ALT_R, P, resizeactive, 50 0"
 					# "ALT_R SHIFT, O, resizeactive, 0 -50"

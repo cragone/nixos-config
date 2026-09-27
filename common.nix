@@ -70,6 +70,7 @@
 		mullvad
 		openvpn
 		fastfetch
+		neovim
 		git
 		gh
 		cloudflared
