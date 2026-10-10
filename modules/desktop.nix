@@ -5,6 +5,12 @@
 
 	nixpkgs.overlays = [ inputs.claude-code.overlays.default ];
 
+	boot.plymouth = {
+		enable = true;
+		theme = "bear-ascii";
+		themePackages = [ (pkgs.callPackage ./plymouth-bear-ascii { }) ];
+	};
+
 	environment.variables = {
 		EDITOR = "micro";
 		VISUAL = "micro";
@@ -176,6 +182,7 @@
 	};
 	stylix.opacity.terminal = 0.8;
 	stylix.targets.chromium.enable = true;
+	stylix.targets.plymouth.enable = false;
 	stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/twilight.yaml";
 
 	# networking.firewall.allowedTCPPorts = [ ];

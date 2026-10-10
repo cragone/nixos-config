@@ -1,0 +1,81 @@
+# Bear ASCII Plymouth boot theme
+
+Window.SetBackgroundTopColor(0, 0, 0);
+Window.SetBackgroundBottomColor(0, 0, 0);
+
+bear.image = Image("bear.png");
+
+bear.max_w = Window.GetWidth() * 0.92;
+bear.max_h = Window.GetHeight() * 0.92;
+bear.scale_w = bear.max_w / bear.image.GetWidth();
+bear.scale_h = bear.max_h / bear.image.GetHeight();
+
+if (bear.scale_w < bear.scale_h)
+  bear.scale = bear.scale_w;
+else
+  bear.scale = bear.scale_h;
+
+if (bear.scale > 1)
+  bear.scale = 1;
+
+bear.scaled = bear.image.Scale(bear.image.GetWidth() * bear.scale, bear.image.GetHeight() * bear.scale);
+bear.sprite = Sprite(bear.scaled);
+bear.sprite.SetPosition(
+  Window.GetX() + Window.GetWidth()  / 2 - bear.scaled.GetWidth()  / 2,
+  Window.GetY() + Window.GetHeight() / 2 - bear.scaled.GetHeight() / 2,
+  0
+);
+
+# ---------------- status text ("booting", "booting.", ...) ----------------
+
+status.sprite = Sprite();
+status.sprite.SetPosition(0, 0, 10);
+
+fun update_status(msg)
+  {
+    status.image = Image.Text(msg, 0.8, 0.8, 0.8);
+    status.sprite.SetImage(status.image);
+    status.sprite.SetPosition(
+      Window.GetX() + Window.GetWidth()  / 2 - status.image.GetWidth()  / 2,
+      Window.GetY() + Window.GetHeight() * 0.96 - status.image.GetHeight() / 2,
+      10
+    );
+  }
+
+update_status("booting");
+
+frame = 0;
+dot_count = 0;
+
+fun refresh_callback ()
+  {
+    frame = frame + 1;
+    if (frame >= 15)
+      {
+        frame = 0;
+        dot_count = dot_count + 1;
+        if (dot_count > 3)
+          dot_count = 0;
+
+        if (dot_count == 0)
+          update_status("booting");
+        if (dot_count == 1)
+          update_status("booting.");
+        if (dot_count == 2)
+          update_status("booting..");
+        if (dot_count == 3)
+          update_status("booting...");
+      }
+  }
+
+Plymouth.SetRefreshFunction (refresh_callback);
+
+# ---------------- quit (fade out) ----------------
+
+fun quit_callback ()
+  {
+    bear.sprite.SetOpacity (1);
+    status.sprite.SetOpacity (0);
+  }
+
+Plymouth.SetQuitFunction (quit_callback);
