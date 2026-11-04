@@ -6,7 +6,7 @@
 	
 	home-manager.users.charlie = {
 		systemd.user.tmpfiles.rules = [
-			"d %h/canavan-a 0755 - - -"
+			"d %h/lions0755 - - -"
 			"d %h/work 0755 - - -"
 			"d %h/other 0755 - - -"
 			"d %h/scripts 0755 - - -"
