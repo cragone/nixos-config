@@ -2,7 +2,7 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, options, ... }:
+{ config, pkgs, ... }:
 
 {
   imports =
@@ -95,16 +95,17 @@
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
-  # `sudo` strips NIX_PATH from the environment by default, so without this
-  # `sudo nixos-rebuild switch` can't find `nixos-config` even though it's
-  # the normal default — this pins it at the Nix daemon level instead of
-  # relying on the caller's shell env. IMPORTANT: NixOS list options only
-  # merge definitions that share the same priority; the module's own
-  # default is set at low priority (mkDefault), so assigning this plainly
-  # would *replace* it outright (this bit us once already, breaking
-  # `<nixpkgs/nixos>` resolution) — `options.nix.nixPath.default` pulls in
-  # the real default explicitly instead of relying on merge semantics.
-  nix.nixPath = options.nix.nixPath.default ++ [ "nixos-config=/etc/nixos/configuration.nix" ];
+  # `sudo` strips NIX_PATH from the environment entirely by default — that's
+  # the actual root cause of `sudo nixos-rebuild switch` failing to resolve
+  # `nixos-config` (and, previously, breaking `nixpkgs` resolution too, when
+  # an earlier attempt here tried to patch nix.nixPath instead and
+  # accidentally replaced whatever was making nixpkgs resolve). Fixing this
+  # at the actual source: pin NIX_PATH to a known-correct value and tell
+  # sudo to keep it instead of wiping it.
+  environment.variables.NIX_PATH = "nixpkgs=/nix/var/nix/profiles/per-user/root/channels/nixos:nixos-config=/etc/nixos/configuration.nix:/nix/var/nix/profiles/per-user/root/channels";
+  security.sudo.extraConfig = ''
+    Defaults env_keep += "NIX_PATH"
+  '';
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
