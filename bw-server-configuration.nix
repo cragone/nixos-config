@@ -108,6 +108,7 @@
   #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
   #  wget
     webhook
+    cloudflared
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
@@ -179,16 +180,26 @@
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "26.05"; # Did you read the comment?
 
-  # charlie already has full sudo (wheel) but needs it *passwordless* for
-  # just `k3s` specifically, since the deploy webhook above runs unattended
+  # charlie already has full sudo (wheel) but needs it *passwordless* for a
+  # few specific things: `k3s` since the deploy webhook runs unattended
   # (triggered over HTTP, no terminal to type a sudo password into) and
-  # needs `k3s ctr`/`k3s kubectl` to land the deploy.
+  # needs `k3s ctr`/`k3s kubectl` to land the deploy; and restarting the
+  # tunnel/webhook services, since editing their config/hooks files doesn't
+  # itself trigger a restart the way changing the unit definition would.
   security.sudo.extraRules = [
     {
       users = [ "charlie" ];
       commands = [
         {
           command = "/run/current-system/sw/bin/k3s";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/run/current-system/sw/bin/systemctl restart cloudflared-tunnel";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/run/current-system/sw/bin/systemctl restart vecna-deploy-webhook";
           options = [ "NOPASSWD" ];
         }
       ];
