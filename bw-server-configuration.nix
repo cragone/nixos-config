@@ -95,6 +95,13 @@
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
+  # `sudo` strips NIX_PATH from the environment by default, so without this
+  # `sudo nixos-rebuild switch` can't find `nixos-config` even though it's
+  # the normal default — this pins it at the Nix daemon level instead of
+  # relying on the caller's shell env. (NixOS list options like this one
+  # merge/append with the module system's own default, they don't replace it.)
+  nix.nixPath = [ "nixos-config=/etc/nixos/configuration.nix" ];
+
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
