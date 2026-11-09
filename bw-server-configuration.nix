@@ -181,6 +181,10 @@
     serviceConfig = {
       User = "charlie";
       WorkingDirectory = "/home/charlie/monotheism";
+      # Systemd's default PATH for services has none of bash/git/docker/k3s
+      # on it, so deploy-local.sh (and everything it shells out to, including
+      # the setuid `sudo` wrapper) needs this spelled out explicitly.
+      Environment = "PATH=/run/wrappers/bin:/run/current-system/sw/bin";
       ExecStart = "${pkgs.webhook}/bin/webhook -hooks /home/charlie/monotheism/vecna/scripts/hooks.json -port 8088 -verbose";
       Restart = "on-failure";
       RestartSec = "5s";
