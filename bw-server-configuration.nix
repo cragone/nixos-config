@@ -129,6 +129,16 @@
   # brute-forcing from anywhere on the internet.
   services.openssh.settings.PasswordAuthentication = false;
 
+  # Belt-and-suspenders beyond key-only auth above: don't let the openssh
+  # module open port 22 globally, and only accept it from the home LAN
+  # subnet instead — regardless of what the router does or doesn't forward.
+  # This doesn't affect the Cloudflare Tunnel, which connects to SSH over
+  # loopback (127.0.0.1), not through this external-facing rule.
+  services.openssh.openFirewall = false;
+  networking.firewall.extraCommands = ''
+    iptables -A nixos-fw -p tcp --dport 22 -s 192.168.1.0/24 -j nixos-fw-accept
+  '';
+
   # Docker, needed to run vecna's docker-compose stack (mqtt-broker,
   # cync-lan, vecna) on this home-LAN box. See VECNA.md in the repo.
   virtualisation.docker.enable = true;
