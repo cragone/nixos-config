@@ -2,7 +2,7 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, ... }:
+{ config, pkgs, options, ... }:
 
 {
   imports =
@@ -98,9 +98,13 @@
   # `sudo` strips NIX_PATH from the environment by default, so without this
   # `sudo nixos-rebuild switch` can't find `nixos-config` even though it's
   # the normal default — this pins it at the Nix daemon level instead of
-  # relying on the caller's shell env. (NixOS list options like this one
-  # merge/append with the module system's own default, they don't replace it.)
-  nix.nixPath = [ "nixos-config=/etc/nixos/configuration.nix" ];
+  # relying on the caller's shell env. IMPORTANT: NixOS list options only
+  # merge definitions that share the same priority; the module's own
+  # default is set at low priority (mkDefault), so assigning this plainly
+  # would *replace* it outright (this bit us once already, breaking
+  # `<nixpkgs/nixos>` resolution) — `options.nix.nixPath.default` pulls in
+  # the real default explicitly instead of relying on merge semantics.
+  nix.nixPath = options.nix.nixPath.default ++ [ "nixos-config=/etc/nixos/configuration.nix" ];
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
