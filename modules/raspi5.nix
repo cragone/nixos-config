@@ -23,6 +23,10 @@
 	];
 	services.openssh.settings.PasswordAuthentication = false;
 
+	# common.nix only puts charlie in networkmanager+wheel; docker builds
+	# (deploy-local.sh) need the docker group too.
+	users.users.charlie.extraGroups = [ "docker" ];
+
 	# Hosts control-panel (see CONTROL-PANEL.md in the monotheism repo):
 	# docker builds the image, k3s (containerd) runs it, a Cloudflare Tunnel
 	# exposes it without opening any inbound port, and a token-gated webhook
