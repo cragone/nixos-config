@@ -144,12 +144,12 @@ in
 		};
 	};
 
-	# Ships this host's cage-tty1/cloudflared-tunnel/control-panel-deploy-webhook
-	# journal logs, plus liveness (ActiveState/SubState), to the existing
-	# Argus server at https://argus.charlesragone.com -- shows up there
-	# under Services as "raspi5" (see ARGUS.md in monotheism, and
-	# super-argus/agent/README.md). ARGUS_API_KEY has to be minted from the
-	# running server by an admin first; the service simply doesn't start
+	# Ships this host's cage-tty1/control-panel-deploy-webhook journal logs,
+	# plus liveness (ActiveState/SubState), to the existing Argus server at
+	# https://argus.charlesragone.com (see ARGUS.md in monotheism, and
+	# super-argus/agent/README.md). Deliberately excludes cloudflared-tunnel --
+	# not interesting enough to track. ARGUS_API_KEY has to be minted from
+	# the running server by an admin first; the service simply doesn't start
 	# until that file exists.
 	systemd.services.argus-agent = {
 		description = "argus-agent (ships raspi5's journal to Argus)";
@@ -159,7 +159,7 @@ in
 		unitConfig.ConditionPathExists = "/home/charlie/.argus-agent-env";
 		environment = {
 			ARGUS_AGENT_MODE = "journal";
-			ARGUS_JOURNAL_UNITS = "cage-tty1,cloudflared-tunnel,control-panel-deploy-webhook";
+			ARGUS_JOURNAL_UNITS = "cage-tty1,control-panel-deploy-webhook";
 		};
 		serviceConfig = {
 			ExecStart = "${argusAgent}/bin/agent";
