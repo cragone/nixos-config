@@ -51,40 +51,13 @@
 		libraries = with pkgs; [ fontconfig freetype libxkbcommon wayland mesa ];
 	};
 
-	services.mosquitto = {
-		enable = true;
-		listeners = [
-			{
-				port = 1883;
-				omitPasswordAuth = true;
-				settings.allow_anonymous = true;
-			}
-		];
-	};
-
-	systemd.services.control-panel-web = {
-		description = "control-panel web backend";
-		after = [ "mosquitto.service" ];
-		wants = [ "mosquitto.service" ];
-		wantedBy = [ "multi-user.target" ];
-		serviceConfig = {
-			User = "charlie";
-			WorkingDirectory = "/home/charlie/control-panel/web";
-			Environment = [ "PORT=8080" "MQTT_BROKER=localhost" ];
-			ExecStart = "/home/charlie/control-panel/web/main";
-			Restart = "on-failure";
-			RestartSec = "5s";
-		};
-	};
-
 	# Fullscreen kiosk session: boots straight to tty1, no display manager,
 	# no window manager chrome, no browser -- cage is a minimal Wayland
 	# compositor that runs exactly one client fullscreen: the native Rust
-	# (Slint) kiosk binary, GPU-accelerated via mainline Mesa's V3D/VC4
-	# driver for the Pi 5, talking to the backend over a loopback WebSocket
-	# for the lowest possible latency. Built by
-	# monotheism/control-panel/scripts/deploy-local.sh (`cargo build
-	# --release`), same as the Go backend and Bun frontend.
+	# (Slint) kiosk binary, which talks directly to vecna's API over HTTPS
+	# for device names/state and control (see CONTROL-PANEL.md) -- no local
+	# MQTT broker or Go backend on this host at all. Built by
+	# monotheism/control-panel/scripts/deploy-local.sh (`cargo build --release`).
 	services.cage = {
 		enable = true;
 		user = "charlie";
@@ -105,12 +78,14 @@
 			# than erroring -- force the software renderer instead, which
 			# reliably renders as a plain SHM-backed buffer cage can compose.
 			SLINT_BACKEND = "winit-software";
-			# Set once bw-server exposes a LAN-only, unauthenticated route for
-			# vecna's device list (see CONTROL-PANEL.md) -- until then the
-			# kiosk falls back to a generic zone name.
-			# VECNA_DEVICES_URL = "http://192.168.1.91:<port>/api/devices";
 		};
 	};
+
+	# VECNA_API_USER/VECNA_API_PASSWORD (a dedicated raspi5-kiosk htpasswd
+	# user on vecna, not the human login) live here, created once by hand on
+	# the host and never committed -- same pattern as the deploy webhook's
+	# hooks.json.
+	systemd.services.cage-tty1.serviceConfig.EnvironmentFile = "/home/charlie/.vecna-kiosk-env";
 
 	# Config/credentials live under charlie's home (created via
 	# `cloudflared tunnel login/create/route dns`), so this runs as charlie,
@@ -149,7 +124,7 @@
 	};
 
 	# charlie already has full sudo (wheel, from common.nix) but needs it
-	# *passwordless* for a few specific things: restarting control-panel-web
+	# *passwordless* for a few specific things: restarting the kiosk session
 	# after a deploy, and restarting the tunnel/webhook services, since the
 	# webhook runs unattended (triggered over HTTP, no terminal to type a
 	# sudo password into).
@@ -157,10 +132,6 @@
 		{
 			users = [ "charlie" ];
 			commands = [
-				{
-					command = "/run/current-system/sw/bin/systemctl restart control-panel-web";
-					options = [ "NOPASSWD" ];
-				}
 				{
 					command = "/run/current-system/sw/bin/systemctl restart cage-tty1";
 					options = [ "NOPASSWD" ];
