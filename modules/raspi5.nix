@@ -96,6 +96,15 @@
 			# not later dlopen() calls, which still go through the standard
 			# LD_LIBRARY_PATH.
 			LD_LIBRARY_PATH = lib.makeLibraryPath (with pkgs; [ wayland libxkbcommon fontconfig freetype mesa ]);
+			# This board only exposes /dev/dri/card1 (vc4, display/KMS-only) --
+			# no separate renderD* node -- so there's no real GPU render
+			# capability available to EGL here (confirmed: cage's own
+			# compositor falls back to its software pixman renderer for the
+			# same reason). Slint's default backend tries GPU/femtovg first
+			# and, on this hardware, ends up presenting nothing at all rather
+			# than erroring -- force the software renderer instead, which
+			# reliably renders as a plain SHM-backed buffer cage can compose.
+			SLINT_BACKEND = "winit-software";
 			# Set once bw-server exposes a LAN-only, unauthenticated route for
 			# vecna's device list (see CONTROL-PANEL.md) -- until then the
 			# kiosk falls back to a generic zone name.
