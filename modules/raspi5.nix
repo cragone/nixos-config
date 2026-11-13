@@ -90,6 +90,12 @@
 		user = "charlie";
 		program = "/home/charlie/control-panel/kiosk/target/release/control-panel-kiosk";
 		environment = {
+			# winit's wayland backend dlopen()s libwayland-client.so at
+			# runtime rather than linking it directly; nix-ld's
+			# NIX_LD_LIBRARY_PATH covers the binary's own startup deps but
+			# not later dlopen() calls, which still go through the standard
+			# LD_LIBRARY_PATH.
+			LD_LIBRARY_PATH = lib.makeLibraryPath (with pkgs; [ wayland libxkbcommon fontconfig freetype mesa ]);
 			# Set once bw-server exposes a LAN-only, unauthenticated route for
 			# vecna's device list (see CONTROL-PANEL.md) -- until then the
 			# kiosk falls back to a generic zone name.
