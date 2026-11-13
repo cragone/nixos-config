@@ -1,12 +1,12 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, modulesPath, ... }:
 {
-	raspberry-pi-nix.board = "bcm2712";
+	imports = [ (modulesPath + "/installer/sd-card/sd-image-aarch64.nix") ];
 
 	nixpkgs.hostPlatform = "aarch64-linux";
 
-	# common.nix assumes a UEFI x86 host; the Pi boots straight off the
-	# firmware-partition kernel.img that raspberry-pi-nix's sd-image module
-	# manages itself, so neither of these apply here.
+	# common.nix assumes a UEFI x86 host; the Pi boots via the mainline
+	# u-boot + extlinux setup that sd-image-aarch64.nix above already wires
+	# up, so neither of these apply here.
 	boot.loader.systemd-boot.enable = lib.mkForce false;
 	boot.loader.efi.canTouchEfiVariables = lib.mkForce false;
 

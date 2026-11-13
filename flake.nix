@@ -22,12 +22,6 @@
 		url = "github:canavan-a/horus-33";
 		inputs.nixpkgs.follows = "nixpkgs";
 	};
-	# Deliberately NOT following our nixpkgs here: this flake builds its own
-	# Raspberry Pi kernel and pins a separate nixpkgs internally so that kernel
-	# build hits the nix-community cachix cache instead of compiling from
-	# scratch. Only the kernel/firmware packages come from that pin; everything
-	# else in the raspi5 host still uses our nixpkgs.
-	raspberry-pi-nix.url = "github:nix-community/raspberry-pi-nix";
   };
 
 
@@ -115,10 +109,17 @@
 		};
 
 		# Generic, reusable Pi 5 host: build once, `dd` the resulting sdImage
-		# to as many Pi 5 boards/SD cards as you want. No per-board hardware
-		# file needed since raspberry-pi-nix's sd-image module provides
-		# label-based filesystems (NIXOS_SD / FIRMWARE) itself.
-		raspi5 = inputs.nixpkgs.lib.nixosSystem {
+		# to as many Pi 5 boards/SD cards as you want. Built against
+		# nixpkgs-unstable rather than our usual nixpkgs (26.05) because Pi 5
+		# support (mainline kernel dtbs + u-boot config.txt) only landed in
+		# nixpkgs on 2026-07-03 and hasn't been backported to 26.05 yet. Uses
+		# nixpkgs' own generic aarch64 sd-image module (mainline kernel +
+		# u-boot + extlinux) -- the same mechanism the official NixOS
+		# nixos-unstable aarch64 SD image uses, so flashing that official
+		# image first and later `nixos-rebuild switch --flake`-ing to this
+		# host from the Pi itself is a same-bootloader-scheme switch, not a
+		# cross-bootloader one.
+		raspi5 = nixpkgs-unstable.lib.nixosSystem {
 			system = "aarch64-linux";
 			specialArgs = { inherit inputs; };
 			modules = [
