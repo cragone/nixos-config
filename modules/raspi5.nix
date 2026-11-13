@@ -1,17 +1,4 @@
 { config, pkgs, lib, modulesPath, ... }:
-let
-	controlPanelKiosk = pkgs.writeShellScript "control-panel-kiosk" ''
-		exec ${pkgs.chromium}/bin/chromium \
-			--kiosk \
-			--app=http://localhost:8080 \
-			--ozone-platform=wayland \
-			--noerrdialogs \
-			--disable-infobars \
-			--disable-session-crashed-bubble \
-			--disable-translate \
-			--overscroll-history-navigation=0
-	'';
-in
 {
 	imports = [ (modulesPath + "/installer/sd-card/sd-image-aarch64.nix") ];
 
@@ -38,9 +25,23 @@ in
 
 	# Hosts control-panel (see CONTROL-PANEL.md in the monotheism repo) as
 	# a dedicated kiosk appliance: a touchscreen attached to this Pi shows
-	# a fullscreen, chrome-less view of the app -- that's its only job, so
-	# everything runs natively (no k3s/Docker) for minimum latency.
-	environment.systemPackages = with pkgs; [ webhook cloudflared bun chromium ];
+	# a fullscreen, native Rust (Slint) view of the app -- no browser/webview
+	# at all -- that's its only job, so everything runs natively (no
+	# k3s/Docker) for minimum latency.
+	environment.systemPackages = with pkgs; [
+		webhook cloudflared bun
+		cargo rustc pkg-config
+		fontconfig.dev freetype.dev libxkbcommon wayland mesa
+	];
+
+	# kiosk/ is a plain `cargo build`, not a Nix-packaged derivation (matches
+	# the ad-hoc native-build pattern deploy-local.sh already uses for the Go
+	# backend and Bun frontend), so the resulting binary needs nix-ld to find
+	# its runtime shared libraries (NixOS has no /usr/lib-style global path).
+	programs.nix-ld = {
+		enable = true;
+		libraries = with pkgs; [ fontconfig freetype libxkbcommon wayland mesa ];
+	};
 
 	services.mosquitto = {
 		enable = true;
@@ -69,15 +70,23 @@ in
 	};
 
 	# Fullscreen kiosk session: boots straight to tty1, no display manager,
-	# no window manager chrome -- cage is a minimal Wayland compositor that
-	# runs exactly one client fullscreen. Chromium in --kiosk/--app mode has
-	# no visible browser UI (no tabs, address bar, etc.), is GPU-accelerated
-	# via mainline Mesa's V3D/VC4 driver for the Pi 5, and is pointed at the
-	# backend over loopback for the lowest possible latency.
+	# no window manager chrome, no browser -- cage is a minimal Wayland
+	# compositor that runs exactly one client fullscreen: the native Rust
+	# (Slint) kiosk binary, GPU-accelerated via mainline Mesa's V3D/VC4
+	# driver for the Pi 5, talking to the backend over a loopback WebSocket
+	# for the lowest possible latency. Built by
+	# monotheism/control-panel/scripts/deploy-local.sh (`cargo build
+	# --release`), same as the Go backend and Bun frontend.
 	services.cage = {
 		enable = true;
 		user = "charlie";
-		program = "${controlPanelKiosk}";
+		program = "/home/charlie/control-panel/kiosk/target/release/control-panel-kiosk";
+		environment = {
+			# Set once bw-server exposes a LAN-only, unauthenticated route for
+			# vecna's device list (see CONTROL-PANEL.md) -- until then the
+			# kiosk falls back to a generic zone name.
+			# VECNA_DEVICES_URL = "http://192.168.1.91:<port>/api/devices";
+		};
 	};
 
 	# Config/credentials live under charlie's home (created via
@@ -127,6 +136,10 @@ in
 			commands = [
 				{
 					command = "/run/current-system/sw/bin/systemctl restart control-panel-web";
+					options = [ "NOPASSWD" ];
+				}
+				{
+					command = "/run/current-system/sw/bin/systemctl restart cage-tty1";
 					options = [ "NOPASSWD" ];
 				}
 				{
