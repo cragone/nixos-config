@@ -127,8 +127,6 @@
 				./modules/dir.nix
 				./modules/micro.nix
 				./modules/raspi5.nix
-				inputs.raspberry-pi-nix.nixosModules.raspberry-pi
-				inputs.raspberry-pi-nix.nixosModules.sd-image
 				home-manager.nixosModules.home-manager
 			];
 		};
