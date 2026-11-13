@@ -8,12 +8,12 @@ let
 	# the actively-developed kiosk.
 	argusAgent = pkgs.buildGoModule {
 		pname = "argus-agent";
-		version = "unstable-2026-11-13";
+		version = "unstable-2026-11-13-log-levels";
 		src = pkgs.fetchFromGitHub {
 			owner = "cragone";
 			repo = "super-argus";
-			rev = "b147a7e9dafb91913ddcb4b493315dbc00f5a430";
-			hash = "sha256-yvXi67+gN311I3qO3b3OJjWtwYTgJ46TwzsN9dnyr3s=";
+			rev = "c03a350edea008fcfae70d1022a8751867c01168"; # log-levels (PR #25)
+			hash = "sha256-QioAfOTghKXffqJQoDxKJXbeOUsr/mZ9VtK7xgJj+I8=";
 		};
 		modRoot = "agent";
 		vendorHash = "sha256-3TekezA8IKfr2+NBzMzDk7yAmjmcYcv+nrFmaCzGWP8=";
