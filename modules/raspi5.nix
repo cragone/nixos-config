@@ -1,4 +1,25 @@
 { config, pkgs, lib, modulesPath, ... }:
+let
+	# Just the agent half of super-argus's nixosModules.default -- that
+	# module bundles a full local Argus *server* too, which we don't want
+	# here (logs ship to the existing one at https://argus.charlesragone.com
+	# on bw-server instead). buildGoModule rather than an ad-hoc `cargo
+	# build`-style activation script since this code changes rarely, unlike
+	# the actively-developed kiosk.
+	argusAgent = pkgs.buildGoModule {
+		pname = "argus-agent";
+		version = "unstable-2026-11-13";
+		src = pkgs.fetchFromGitHub {
+			owner = "cragone";
+			repo = "super-argus";
+			rev = "b147a7e9dafb91913ddcb4b493315dbc00f5a430";
+			hash = "sha256-yvXi67+gN311I3qO3b3OJjWtwYTgJ46TwzsN9dnyr3s=";
+		};
+		modRoot = "agent";
+		vendorHash = "sha256-3TekezA8IKfr2+NBzMzDk7yAmjmcYcv+nrFmaCzGWP8=";
+		doCheck = false; # needs a live journal/dbus environment
+	};
+in
 {
 	imports = [ (modulesPath + "/installer/sd-card/sd-image-aarch64.nix") ];
 
@@ -120,6 +141,37 @@
 			ExecStart = "${pkgs.webhook}/bin/webhook -hooks /home/charlie/monotheism/control-panel/scripts/hooks.json -port 8089 -verbose";
 			Restart = "on-failure";
 			RestartSec = "5s";
+		};
+	};
+
+	# Ships this host's cage-tty1/cloudflared-tunnel/control-panel-deploy-webhook
+	# journal logs, plus liveness (ActiveState/SubState), to the existing
+	# Argus server at https://argus.charlesragone.com -- shows up there
+	# under Services as "raspi5" (see ARGUS.md in monotheism, and
+	# super-argus/agent/README.md). ARGUS_API_KEY has to be minted from the
+	# running server by an admin first; the service simply doesn't start
+	# until that file exists.
+	systemd.services.argus-agent = {
+		description = "argus-agent (ships raspi5's journal to Argus)";
+		after = [ "network-online.target" ];
+		wants = [ "network-online.target" ];
+		wantedBy = [ "multi-user.target" ];
+		unitConfig.ConditionPathExists = "/home/charlie/.argus-agent-env";
+		environment = {
+			ARGUS_AGENT_MODE = "journal";
+			ARGUS_JOURNAL_UNITS = "cage-tty1,cloudflared-tunnel,control-panel-deploy-webhook";
+		};
+		serviceConfig = {
+			ExecStart = "${argusAgent}/bin/agent";
+			EnvironmentFile = "/home/charlie/.argus-agent-env";
+			Restart = "always";
+			RestartSec = "5s";
+			DynamicUser = true;
+			StateDirectory = "argus-agent";
+			SupplementaryGroups = [ "systemd-journal" ];
+			NoNewPrivileges = true;
+			ProtectSystem = "strict";
+			ProtectHome = true;
 		};
 	};
 
