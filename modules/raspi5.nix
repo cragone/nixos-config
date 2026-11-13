@@ -31,8 +31,16 @@
 	environment.systemPackages = with pkgs; [
 		webhook cloudflared bun
 		cargo rustc pkg-config
-		fontconfig.dev freetype.dev libxkbcommon wayland mesa
+		fontconfig.dev freetype.dev libxkbcommon.dev wayland.dev mesa
 	];
+
+	# `cargo build`'s pkg-config probes (fontconfig-sys, freetype-sys, etc.)
+	# don't automatically see -dev outputs placed in systemPackages the way
+	# a nix-shell's buildInputs would -- PKG_CONFIG_PATH has to be set
+	# explicitly.
+	environment.variables.PKG_CONFIG_PATH = lib.makeSearchPath "lib/pkgconfig" (with pkgs; [
+		fontconfig.dev freetype.dev libxkbcommon.dev wayland.dev mesa
+	]);
 
 	# kiosk/ is a plain `cargo build`, not a Nix-packaged derivation (matches
 	# the ad-hoc native-build pattern deploy-local.sh already uses for the Go
