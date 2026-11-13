@@ -1,4 +1,17 @@
 { config, pkgs, lib, modulesPath, ... }:
+let
+	controlPanelKiosk = pkgs.writeShellScript "control-panel-kiosk" ''
+		exec ${pkgs.chromium}/bin/chromium \
+			--kiosk \
+			--app=http://localhost:8080 \
+			--ozone-platform=wayland \
+			--noerrdialogs \
+			--disable-infobars \
+			--disable-session-crashed-bubble \
+			--disable-translate \
+			--overscroll-history-navigation=0
+	'';
+in
 {
 	imports = [ (modulesPath + "/installer/sd-card/sd-image-aarch64.nix") ];
 
@@ -23,21 +36,49 @@
 	];
 	services.openssh.settings.PasswordAuthentication = false;
 
-	# common.nix only puts charlie in networkmanager+wheel; docker builds
-	# (deploy-local.sh) need the docker group too.
-	users.users.charlie.extraGroups = [ "docker" ];
+	# Hosts control-panel (see CONTROL-PANEL.md in the monotheism repo) as
+	# a dedicated kiosk appliance: a touchscreen attached to this Pi shows
+	# a fullscreen, chrome-less view of the app -- that's its only job, so
+	# everything runs natively (no k3s/Docker) for minimum latency.
+	environment.systemPackages = with pkgs; [ webhook cloudflared bun chromium ];
 
-	# Hosts control-panel (see CONTROL-PANEL.md in the monotheism repo):
-	# docker builds the image, k3s (containerd) runs it, a Cloudflare Tunnel
-	# exposes it without opening any inbound port, and a token-gated webhook
-	# lets CI trigger a deploy without SSH access to this box.
-	virtualisation.docker.enable = true;
-	services.k3s = {
+	services.mosquitto = {
 		enable = true;
-		role = "server";
+		listeners = [
+			{
+				port = 1883;
+				omitPasswordAuth = true;
+				settings.allow_anonymous = true;
+			}
+		];
 	};
 
-	environment.systemPackages = with pkgs; [ webhook cloudflared bun ];
+	systemd.services.control-panel-web = {
+		description = "control-panel web backend";
+		after = [ "mosquitto.service" ];
+		wants = [ "mosquitto.service" ];
+		wantedBy = [ "multi-user.target" ];
+		serviceConfig = {
+			User = "charlie";
+			WorkingDirectory = "/home/charlie/control-panel/web";
+			Environment = [ "PORT=8080" "MQTT_BROKER=localhost" ];
+			ExecStart = "/home/charlie/control-panel/web/main";
+			Restart = "on-failure";
+			RestartSec = "5s";
+		};
+	};
+
+	# Fullscreen kiosk session: boots straight to tty1, no display manager,
+	# no window manager chrome -- cage is a minimal Wayland compositor that
+	# runs exactly one client fullscreen. Chromium in --kiosk/--app mode has
+	# no visible browser UI (no tabs, address bar, etc.), is GPU-accelerated
+	# via mainline Mesa's V3D/VC4 driver for the Pi 5, and is pointed at the
+	# backend over loopback for the lowest possible latency.
+	services.cage = {
+		enable = true;
+		user = "charlie";
+		program = "${controlPanelKiosk}";
+	};
 
 	# Config/credentials live under charlie's home (created via
 	# `cloudflared tunnel login/create/route dns`), so this runs as charlie,
@@ -65,7 +106,7 @@
 		serviceConfig = {
 			User = "charlie";
 			WorkingDirectory = "/home/charlie/monotheism";
-			# Systemd's default PATH for services has none of bash/git/docker/k3s
+			# Systemd's default PATH for services has none of bash/git/go/bun
 			# on it, so deploy-local.sh (and everything it shells out to,
 			# including the setuid `sudo` wrapper) needs this spelled out explicitly.
 			Environment = "PATH=/run/wrappers/bin:/run/current-system/sw/bin";
@@ -76,18 +117,16 @@
 	};
 
 	# charlie already has full sudo (wheel, from common.nix) but needs it
-	# *passwordless* for a few specific things: `k3s` since the deploy
+	# *passwordless* for a few specific things: restarting control-panel-web
+	# after a deploy, and restarting the tunnel/webhook services, since the
 	# webhook runs unattended (triggered over HTTP, no terminal to type a
-	# sudo password into) and needs `k3s ctr`/`k3s kubectl` to land the
-	# deploy; and restarting the tunnel/webhook services, since editing
-	# their config/hooks files doesn't itself trigger a restart the way
-	# changing the unit definition would.
+	# sudo password into).
 	security.sudo.extraRules = [
 		{
 			users = [ "charlie" ];
 			commands = [
 				{
-					command = "/run/current-system/sw/bin/k3s";
+					command = "/run/current-system/sw/bin/systemctl restart control-panel-web";
 					options = [ "NOPASSWD" ];
 				}
 				{
