@@ -22,6 +22,12 @@
 		url = "github:canavan-a/horus-33";
 		inputs.nixpkgs.follows = "nixpkgs";
 	};
+	# Deliberately NOT following our nixpkgs here: this flake builds its own
+	# Raspberry Pi kernel and pins a separate nixpkgs internally so that kernel
+	# build hits the nix-community cachix cache instead of compiling from
+	# scratch. Only the kernel/firmware packages come from that pin; everything
+	# else in the raspi5 host still uses our nixpkgs.
+	raspberry-pi-nix.url = "github:nix-community/raspberry-pi-nix";
   };
 
 
@@ -107,7 +113,25 @@
 				./modules/wrx80-local-ai.nix
 			];
 		};
-		
+
+		# Generic, reusable Pi 5 host: build once, `dd` the resulting sdImage
+		# to as many Pi 5 boards/SD cards as you want. No per-board hardware
+		# file needed since raspberry-pi-nix's sd-image module provides
+		# label-based filesystems (NIXOS_SD / FIRMWARE) itself.
+		raspi5 = inputs.nixpkgs.lib.nixosSystem {
+			system = "aarch64-linux";
+			specialArgs = { inherit inputs; };
+			modules = [
+				./common.nix
+				./modules/dir.nix
+				./modules/micro.nix
+				./modules/raspi5.nix
+				inputs.raspberry-pi-nix.nixosModules.raspberry-pi
+				inputs.raspberry-pi-nix.nixosModules.sd-image
+				home-manager.nixosModules.home-manager
+			];
+		};
+
 	};
   };
 }
