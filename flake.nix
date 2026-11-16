@@ -60,6 +60,27 @@
 				open-lock.nixosModules.default
 			];	
 		};
+		   laptop = nixpkgs.lib.nixosSystem {
+                        system = "x86_64-linux";
+                        specialArgs = {inherit inputs unstable fleetman; };
+                        modules = [
+                                ./common.nix
+                                ./hardware-configuration-laptop.nix
+                                ./modules/desktop.nix
+                                ./modules/cb-cli.nix
+                                ./modules/work.nix
+                                ./modules/dir.nix
+                                ./modules/micro.nix
+                                ./modules/mqtt-broker.nix
+                                ./modules/5gbandforce.nix
+                                ./modules/claude-code-router.nix
+                                ./cloudflare/cf.nix
+                                home-manager.nixosModules.home-manager
+                                stylix.nixosModules.stylix
+                                open-lock.nixosModules.default
+                        ];      
+                };
+
 		server = nixpkgs.lib.nixosSystem {
 			system = "x86_64-linux";
 			modules = serverBase ++[
