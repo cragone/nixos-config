@@ -28,6 +28,7 @@
 		brightnessctl
 		wev
 		wl-clipboard
+		wtype
 		nerd-fonts.jetbrains-mono
 		networkmanagerapplet
 		libnotify
@@ -525,7 +526,7 @@
 					"ALT_R SHIFT, T, exec, kitty-cwd"
 					"ALT_R, B, exec, brave"
 					"ALT_R SHIFT, B, exec, brave-origin"
-					"CTRL ALT, C, exec, grimblast copysave area ~/screenshots/$(date +%Y%m%d_%H%M%S).png"
+					"CTRL ALT, C, exec, wtype -M ctrl -k c -m ctrl"
 					"CTRL ALT, S, exec, screenshot"
 					"ALT_R SHIFT, Q, killactive,"
 					"ALT_R, H, movefocus, l"
