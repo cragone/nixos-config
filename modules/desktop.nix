@@ -525,7 +525,7 @@
 					"ALT_R SHIFT, T, exec, kitty-cwd"
 					"ALT_R, B, exec, brave"
 					"ALT_R SHIFT, B, exec, brave-origin"
-					"ALT_R, C, exec, grimblast copysave area ~/screenshots/$(date +%Y%m%d_%H%M%S).png"
+					"ALT_R SHIFT, V, exec, grimblast copysave area ~/screenshots/$(date +%Y%m%d_%H%M%S).png"
 					"ALT_R SHIFT, C, exec, screenshot"
 					"ALT_R SHIFT, Q, killactive,"
 					"ALT_R, H, movefocus, l"
